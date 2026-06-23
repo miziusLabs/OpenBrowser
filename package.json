@@ -1,6 +1,6 @@
 {
   "name": "@pxlarified/browser",
-  "version": "1.9.9",
+  "version": "1.9.10",
   "description": "Minimal local browser-control CLI for OpenBrowser.",
   "repository": {
     "type": "git",
