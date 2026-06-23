@@ -1,12 +1,13 @@
 {
   "name": "@pxlarified/browser",
-  "version": "1.9.6",
+  "version": "1.9.7",
   "description": "Minimal local browser-control CLI for OpenBrowser.",
   "type": "module",
   "bin": {
     "OpenBrowser": "./bin/OpenBrowser.js"
   },
   "scripts": {
+    "sync:version": "node scripts/sync-version.js",
     "build": "node scripts/build.js firefox",
     "build:firefox": "node scripts/build.js firefox",
     "release:firefox": "node scripts/sign-firefox.js",

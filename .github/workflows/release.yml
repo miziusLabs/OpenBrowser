@@ -10,7 +10,7 @@ on:
       - extensions/manifest.json
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -23,6 +23,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          ref: main
 
       - name: Detect version bump
         id: version
@@ -37,13 +38,6 @@ jobs:
 
           OLD_VERSION=$(git show "$BEFORE:package.json" 2>/dev/null | node -e 'let d=""; process.stdin.on("data", c => d += c); process.stdin.on("end", () => { if (!d) process.exit(0); console.log(JSON.parse(d).version); });' || true)
           NEW_VERSION=$(node -p 'require("./package.json").version')
-          EXT_VERSION=$(node -p 'require("./extensions/manifest.json").version')
-
-          if [ "$NEW_VERSION" != "$EXT_VERSION" ]; then
-            echo "package.json version ($NEW_VERSION) must match extensions/manifest.json version ($EXT_VERSION)." >&2
-            exit 1
-          fi
-
           if [ -z "$OLD_VERSION" ] || [ "$OLD_VERSION" = "$NEW_VERSION" ]; then
             echo "No package.json version bump detected; skipping release."
             echo "publish=false" >> "$GITHUB_OUTPUT"
@@ -65,6 +59,25 @@ jobs:
       - name: Install dependencies
         if: steps.version.outputs.publish == 'true'
         run: npm ci
+
+      - name: Sync extension and README versions
+        if: steps.version.outputs.publish == 'true'
+        run: npm run sync:version
+
+      - name: Commit synced version files
+        if: steps.version.outputs.publish == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- extensions/manifest.json README.md; then
+            echo "Version files already in sync."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add extensions/manifest.json README.md
+          git commit -m "chore: sync release version ${{ steps.version.outputs.version }}"
+          git push origin HEAD:main
 
       - name: Build project and extensions
         if: steps.version.outputs.publish == 'true'
