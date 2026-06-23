@@ -29,7 +29,7 @@ The local agent skill lives in `skills/browser/` and can be installed from the n
 
 ## License
 
-This project uses a custom fork-for-pull-request-only license. It grants permission only to fork the repository and make changes for submitting a pull request upstream; no other use, distribution, or derivative-work rights are granted. See [LICENSE](LICENSE).
+This project uses the custom GREED-1 license. It grants permission only to fork the repository and make changes for submitting a pull request upstream; no other use, distribution, or derivative-work rights are granted. Committed code is owned by the owners of this repository. See [LICENSE](LICENSE).
 
 ## Features
 

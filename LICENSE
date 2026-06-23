@@ -1,12 +1,12 @@
-Fork-for-Pull-Request-Only License
+GREED-1 License
 
-Copyright (c) 2026 OpenBrowser contributors.
+Copyright (c) 2026 mizius.
 
 Permission is granted only to fork this repository and make changes solely for the purpose of preparing and submitting a pull request back to the upstream OpenBrowser repository.
 
 No other rights are granted. Without prior written permission from the copyright holder, you may not use, copy, publish, distribute, sublicense, sell, host, run as a service, package, release, modify outside the pull-request purpose above, or create derivative works for any other purpose.
 
-If your pull request or any portion of it is accepted into the upstream repository, the accepted contribution is licensed to the upstream project under this same license unless a separate written agreement says otherwise.
+If your pull request or any portion of it is accepted into the upstream repository, the accepted contribution is licensed to the upstream project under this same license unless a separate written agreement says otherwise. All committed code is owned by the owners of this repository.
 
 All copies or forks made under this license must retain this license notice.
 
