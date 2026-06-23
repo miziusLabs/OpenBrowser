@@ -1,0 +1,84 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - package.json
+      - package-lock.json
+      - extensions/manifest.json
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Build, sign, and publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect version bump
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          BEFORE="${{ github.event.before }}"
+          if ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
+            BEFORE="HEAD^"
+          fi
+
+          OLD_VERSION=$(git show "$BEFORE:package.json" 2>/dev/null | node -e 'let d=""; process.stdin.on("data", c => d += c); process.stdin.on("end", () => { if (!d) process.exit(0); console.log(JSON.parse(d).version); });' || true)
+          NEW_VERSION=$(node -p 'require("./package.json").version')
+          EXT_VERSION=$(node -p 'require("./extensions/manifest.json").version')
+
+          if [ "$NEW_VERSION" != "$EXT_VERSION" ]; then
+            echo "package.json version ($NEW_VERSION) must match extensions/manifest.json version ($EXT_VERSION)." >&2
+            exit 1
+          fi
+
+          if [ -z "$OLD_VERSION" ] || [ "$OLD_VERSION" = "$NEW_VERSION" ]; then
+            echo "No package.json version bump detected; skipping release."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Detected version bump: $OLD_VERSION -> $NEW_VERSION"
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node.js
+        if: steps.version.outputs.publish == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.version.outputs.publish == 'true'
+        run: npm ci
+
+      - name: Build project and extensions
+        if: steps.version.outputs.publish == 'true'
+        run: npm run build
+
+      - name: Sign extensions
+        if: steps.version.outputs.publish == 'true'
+        run: npm run release:firefox
+        env:
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+
+      - name: Publish to npm
+        if: steps.version.outputs.publish == 'true'
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
