@@ -95,3 +95,36 @@ jobs:
         run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Prepare GitHub release
+        if: steps.version.outputs.publish == 'true'
+        id: github_release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SHORT_SHA="$(git rev-parse --short HEAD)"
+          RELEASE_TAG="v${{ steps.version.outputs.version }}-${SHORT_SHA}"
+          PREVIOUS_TAG="$(gh release list --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName // ""')"
+          REPOSITORY_URL="${{ github.server_url }}/${{ github.repository }}"
+
+          if [ -n "$PREVIOUS_TAG" ]; then
+            CHANGELOG_URL="${REPOSITORY_URL}/compare/${PREVIOUS_TAG}...${RELEASE_TAG}"
+          else
+            CHANGELOG_URL="${REPOSITORY_URL}/commits/${RELEASE_TAG}"
+          fi
+
+          cat > release-notes.md <<EOF
+          # v${{ steps.version.outputs.version }}
+          See the follow changelog [here](${CHANGELOG_URL}).
+          EOF
+
+          echo "tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Create GitHub release
+        if: steps.version.outputs.publish == 'true'
+        run: gh release create "${{ steps.github_release.outputs.tag }}" --target "$(git rev-parse HEAD)" --title "v${{ steps.version.outputs.version }}" --notes-file release-notes.md
+        env:
+          GH_TOKEN: ${{ github.token }}
