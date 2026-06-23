@@ -2,9 +2,13 @@
   "name": "@pxlarified/browser",
   "version": "1.9.8",
   "description": "Minimal local browser-control CLI for OpenBrowser.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mizius-studios/OpenBrowser"
+  },
   "type": "module",
   "bin": {
-    "OpenBrowser": "./bin/OpenBrowser.js"
+    "OpenBrowser": "bin/OpenBrowser.js"
   },
   "scripts": {
     "sync:version": "node scripts/sync-version.js",
