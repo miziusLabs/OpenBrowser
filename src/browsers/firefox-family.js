@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { EXTENSION_ID, FIREFOX_DEV_ARTIFACT, FIREFOX_SIGNED_ARTIFACT, NATIVE_HOST_NAME } from "../constants.js";
 import { openBrowserHome, packageRoot } from "../util/paths.js";
@@ -13,6 +13,7 @@ export class FirefoxFamilyAdapter {
     this.profileRoots = options.profileRoots;
     this.launchCommands = options.launchCommands;
     this.nativeManifestRoots = options.nativeManifestRoots;
+    this.processNames = options.processNames || [];
   }
 
   artifactPath() {
@@ -26,6 +27,11 @@ export class FirefoxFamilyAdapter {
     const artifact = this.artifactPath();
     if (!fs.existsSync(artifact)) {
       throw new Error(`Missing Firefox extension artifact: ${artifact}. Run npm run build:firefox first.`);
+    }
+
+    const runningProcess = findRunningProcess(this.processNames);
+    if (runningProcess) {
+      throw new Error(`${this.displayName} must be closed before installing or updating the OpenBrowser extension. Close ${this.displayName} and run install again.`);
     }
 
     const nativeHost = installNativeHost(this.name);
@@ -52,7 +58,7 @@ export class FirefoxFamilyAdapter {
       installedExtensions,
       nativeHost,
       nativeManifests: manifests,
-      note: "Extension install/update is staged in the profile. Restart the browser if it does not load immediately.",
+      note: "Extension install/update is staged in the profile. Start the browser to load it.",
     };
   }
 
@@ -84,6 +90,52 @@ export class FirefoxFamilyAdapter {
 
     return uniqueExistingDirectories(profiles);
   }
+}
+
+function findRunningProcess(processNames) {
+  if (processNames.length === 0) return null;
+
+  if (process.platform === "win32") return findRunningWindowsProcess(processNames);
+  return findRunningUnixProcess(processNames);
+}
+
+function findRunningUnixProcess(processNames) {
+  for (const processName of processNames) {
+    try {
+      execFileSync("pgrep", ["-x", processName], { stdio: "ignore" });
+      return processName;
+    } catch {
+      // Process is not running, or pgrep is unavailable. Try the next known name.
+    }
+  }
+  return null;
+}
+
+function findRunningWindowsProcess(processNames) {
+  let output;
+  try {
+    output = execFileSync("tasklist", ["/fo", "csv", "/nh"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
+  } catch {
+    return null;
+  }
+
+  const runningNames = new Set(output
+    .split(/\r?\n/)
+    .map((line) => parseTasklistImageName(line))
+    .filter(Boolean)
+    .map((name) => name.toLowerCase()));
+
+  for (const processName of processNames) {
+    const executable = processName.toLowerCase().endsWith(".exe") ? processName.toLowerCase() : `${processName.toLowerCase()}.exe`;
+    if (runningNames.has(executable)) return processName;
+  }
+  return null;
+}
+
+function parseTasklistImageName(line) {
+  const match = line.match(/^"((?:[^"]|"")*)"/);
+  if (!match) return null;
+  return match[1].replace(/""/g, "\"");
 }
 
 function installNativeHost(browser) {

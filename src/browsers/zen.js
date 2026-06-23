@@ -36,6 +36,12 @@ function platformNativeManifestRoots() {
   return ["~/.mozilla", "~/.zen", "~/.zen-browser"];
 }
 
+function platformProcessNames() {
+  if (process.platform === "darwin") return ["Zen Browser", "Zen", "zen"];
+  if (process.platform === "win32") return ["zen", "zen-browser"];
+  return ["zen", "zen-bin", "zen-browser"];
+}
+
 function platformLaunchCommands() {
   if (process.platform === "darwin") {
     return [
@@ -65,6 +71,7 @@ export class ZenBrowserAdapter extends FirefoxFamilyAdapter {
       profileRoots: platformProfileRoots(),
       nativeManifestRoots: platformNativeManifestRoots(),
       launchCommands: platformLaunchCommands(),
+      processNames: platformProcessNames(),
     });
   }
 }
