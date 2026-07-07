@@ -8,9 +8,9 @@
 
 <p align="center">
   <img alt="Node.js" src="https://img.shields.io/badge/Node.js-%3E%3D20-339933?style=flat-square&logo=node.js&logoColor=white">
-  <img alt="Version" src="https://img.shields.io/badge/version-2.0.1-blue?style=flat-square">
-  <img alt="Browser" src="https://img.shields.io/badge/browser-Zen-7F52FF?style=flat-square">
-  <img alt="Firefox Extension" src="https://img.shields.io/badge/Firefox-WebExtension-FF7139?style=flat-square&logo=firefoxbrowser&logoColor=white">
+  <img alt="Version" src="https://img.shields.io/badge/version-2.1.0-blue?style=flat-square">
+  <img alt="Browser" src="https://img.shields.io/badge/browser-Zen%20%7C%20Chrome-7F52FF?style=flat-square">
+  <img alt="WebExtension" src="https://img.shields.io/badge/WebExtension-Firefox%20%7C%20Chromium-FF7139?style=flat-square&logo=firefoxbrowser&logoColor=white">
 </p>
 
 ## Overview
@@ -40,8 +40,9 @@ This project uses the custom GREED-1 license. It grants permission only to fork 
 - Uses temporary OpenBrowser-generated element references such as `e_1`, `e_2`, and `e_3`.
 - Invalidates references after navigation or relevant DOM updates and returns stale-reference errors for old refs.
 - Saves screenshots to `~/OpenBrowser/screenshots/<uuid>.png` or returns Base64 image data.
-- Includes an extensible browser-adapter architecture for future Firefox-family and Chromium-family browsers.
-- Initially supports Zen, a Firefox-based browser.
+- Includes an extensible browser-adapter architecture covering Firefox-family and Chromium-family browsers.
+- Supports Zen (Firefox-based) and Chrome (Chromium-based).
+- Lets you set a default browser with `config browser <browser>` so `--browser` is optional.
 - Includes a minimal extension logo and uses it as the Firefox extension icon.
 - Builds the Firefox extension into a bundled `.xpi` artifact.
 - Includes a release-signing pipeline for Mozilla unlisted signing with `web-ext sign --channel unlisted`.
@@ -50,19 +51,21 @@ This project uses the custom GREED-1 license. It grants permission only to fork 
 
 - Node.js 20 or newer.
 - npm access to install or run `@pxlarified/browser`.
-- Zen Browser for the initial supported browser target.
-- A Zen profile created on disk. Open Zen once before running the installer.
+- A supported browser: Zen (Firefox-based) or Chrome (Chromium-based).
+- For Zen, a Zen profile created on disk. Open Zen once before running the installer.
+- For Chrome, Developer mode enabled so the staged extension can be loaded unpacked.
 - For signed Firefox releases, Mozilla Add-ons API credentials.
 
 ## Installation
 
-Install the bundled extension and native bridge for Zen.
+Install the bundled extension and native bridge for a browser.
 
 ```sh
 npx @pxlarified/browser install zen
+npx @pxlarified/browser install chrome
 ```
 
-The installer does the following.
+For Zen (Firefox-family) the installer does the following.
 
 1. Copies the bundled Firefox `.xpi` into detected Zen profiles as `openbrowser@mizius.com.xpi`.
 2. Installs the user-scoped native messaging manifest.
@@ -70,6 +73,32 @@ The installer does the following.
 4. Replaces an existing staged OpenBrowser extension with the bundled version.
 
 Restart Zen if the extension update does not load immediately.
+
+For Chrome (Chromium-family) the installer does the following.
+
+1. Installs the native host launcher under `~/OpenBrowser/native-host/`.
+2. Writes the Chromium native messaging manifest (using `allowed_origins`) into Chrome's `NativeMessagingHosts` directory.
+3. Stages the unpacked extension under `~/OpenBrowser/extensions/chrome/`.
+
+Chromium browsers cannot side-load a packed extension from a profile, so load the staged extension manually: open `chrome://extensions`, enable Developer mode, choose "Load unpacked", and select `~/OpenBrowser/extensions/chrome/`. The bundled extension ships a fixed `key`, so it always loads with the same extension id that the native messaging manifest allows.
+
+### Default browser
+
+Set the browser used when `--browser` is omitted.
+
+```sh
+npx @pxlarified/browser config browser chrome
+npx @pxlarified/browser config browser zen
+```
+
+Show the current configuration.
+
+```sh
+npx @pxlarified/browser config browser
+npx @pxlarified/browser config
+```
+
+The default is stored in `~/OpenBrowser/config.json`. Resolution order is `--browser`, then the configured default, then Zen.
 
 ### Agent skill installation
 
@@ -85,13 +114,13 @@ If `--to` points at an agent directory such as `.pi/agent`, OpenBrowser writes `
 
 ## Usage
 
-`--browser zen` is optional while Zen is the only supported browser.
+`--browser <browser>` selects the target browser. It is optional and defaults to the browser set with `config browser`, or Zen when none is configured.
 
 ```sh
 npx @pxlarified/browser open https://example.com --browser zen
-npx @pxlarified/browser state --browser zen
+npx @pxlarified/browser state --browser chrome
 npx @pxlarified/browser click e_1 --browser zen
-npx @pxlarified/browser screenshot --browser zen
+npx @pxlarified/browser screenshot --browser chrome
 npx @pxlarified/browser close --browser zen
 ```
 
@@ -188,24 +217,29 @@ OpenBrowser uses browser-specific adapters so additional browsers can be added l
 
 Currently supported.
 
-- Zen - Firefox-based browser.
+- Zen - Firefox-based browser, installed through a signed `.xpi` artifact.
+- Chrome - Chromium-based browser, loaded unpacked from a `.zip` extension artifact.
 
-Planned architecture support.
-
-- Firefox-family browsers through signed `.xpi` artifacts.
-- Chromium-family browsers through `.zip` extension artifacts.
+The adapter architecture also covers other Firefox-family browsers through signed `.xpi` artifacts and other Chromium-family browsers through `.zip` extension artifacts.
 
 ## Extension artifacts
 
 The browser extension source lives in `extensions/`.
 
-Build the Firefox development artifact.
+Build both extension artifacts.
+
+```sh
+npm run build
+```
+
+Build a single family.
 
 ```sh
 npm run build:firefox
+npm run build:chromium
 ```
 
-The unsigned development artifact is written to.
+The unsigned Firefox development artifact is written to.
 
 ```text
 dist/extensions/firefox/openbrowser-dev.xpi
@@ -218,6 +252,13 @@ dist/extensions/firefox/openbrowser.xpi
 ```
 
 Otherwise it falls back to the unsigned development artifact.
+
+The Chromium build writes an MV3 extension. The installer loads the unpacked directory, and the `.zip` is provided for distribution.
+
+```text
+dist/extensions/chromium/unpacked/
+dist/extensions/chromium/openbrowser.zip
+```
 
 ## Firefox signing
 
@@ -304,8 +345,12 @@ Project entry points.
 - Logo source - `assets/logo.svg`
 - CLI - `bin/OpenBrowser.js`
 - CLI implementation - `src/cli.js`
+- Browser registry - `src/browsers/registry.js`
 - Zen adapter - `src/browsers/zen.js`
+- Chrome adapter - `src/browsers/chrome.js`
 - Firefox-family installer - `src/browsers/firefox-family.js`
+- Chromium-family installer - `src/browsers/chromium-family.js`
+- Default-browser config - `src/util/config.js`
 - Native bridge host - `src/native-host.cjs`
 - Extension background script - `extensions/background.js`
 - Extension content script - `extensions/content.js`

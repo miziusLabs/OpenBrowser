@@ -1,6 +1,6 @@
 {
   "name": "@pxlarified/browser",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "Minimal local browser-control CLI for OpenBrowser.",
   "repository": {
     "type": "git",
@@ -12,8 +12,9 @@
   },
   "scripts": {
     "sync:version": "node scripts/sync-version.js",
-    "build": "node scripts/build.js firefox",
+    "build": "npm run build:firefox && npm run build:chromium",
     "build:firefox": "node scripts/build.js firefox",
+    "build:chromium": "node scripts/build.js chromium",
     "test": "node --test coverage/*.test.js",
     "release:firefox": "node scripts/sign-firefox.js",
     "prepack": "npm run build"

@@ -13,11 +13,16 @@ npx @pxlarified/browser <command>
 Close the session after you are done (unless it contains important information or you want to keep it warm for another session).
 
 ### Usage 
-`--browser zen` is optional.
+`--browser <browser>` selects the browser (`zen` or `chrome`). It is optional and
+defaults to the browser set with `config browser`, or Zen when none is configured.
 
 ```bash
 # Installation
 npx @pxlarified/browser install zen
+npx @pxlarified/browser install chrome
+
+# Default browser (used when --browser is omitted)
+npx @pxlarified/browser config browser chrome
 
 # Session management
 npx @pxlarified/browser open <url> --browser zen
