@@ -4,7 +4,7 @@
   "description": "Minimal local browser-control CLI for OpenBrowser.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mizius-studios/OpenBrowser"
+    "url": "git+https://github.com/miziusLabs/OpenBrowser.git"
   },
   "type": "module",
   "bin": {
