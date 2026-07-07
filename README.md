@@ -8,7 +8,7 @@
 
 <p align="center">
   <img alt="Node.js" src="https://img.shields.io/badge/Node.js-%3E%3D20-339933?style=flat-square&logo=node.js&logoColor=white">
-  <img alt="Version" src="https://img.shields.io/badge/version-2.0.1-blue?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-2.1.0-blue?style=flat-square">
   <img alt="Browser" src="https://img.shields.io/badge/browser-Zen%20%7C%20Chrome-7F52FF?style=flat-square">
   <img alt="WebExtension" src="https://img.shields.io/badge/WebExtension-Firefox%20%7C%20Chromium-FF7139?style=flat-square&logo=firefoxbrowser&logoColor=white">
 </p>
