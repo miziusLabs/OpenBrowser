@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "OpenBrowser",
+  "version": "2.0.1",
+  "description": "Local user-scoped browser control bridge for the OpenBrowser CLI.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyzAut1adVCcD0F/acoPkZeYvT8uijALA+77yvOFFlDRWWDwUoW/pmK4vrdVwppPPbjm7l2IBZgHvTrYjFVS++1BngM97h5O9bZRd8QgFTofRpqJWJMOB5li52c6CcIwtm9BpZTVXZE+YpifgGeeZ7QJ9voeT+Cg18dGVXLT1A0RyNVqyBRhaInIcjbDvZReMWxvI+Gpi/8eVF+pLu7uogtPFjIaOap3jK5YvK0f0JcnQaD6s61IMM3S1LBwZhfiWMwYz6K52d/sQNA9x9iw1EYBAEecohngYQw8n/VMXIWDAB9Sdhe5RoekJ3Lw7xt2U0CvgloPVRNi0p48MqnGIrwIDAQAB",
+  "minimum_chrome_version": "109",
+  "permissions": [
+    "nativeMessaging",
+    "storage",
+    "tabs",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
