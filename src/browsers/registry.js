@@ -1,8 +1,10 @@
 import { ZenBrowserAdapter } from "./zen.js";
+import { ChromeBrowserAdapter } from "./chrome.js";
 import { DEFAULT_BROWSER } from "../constants.js";
 
 const adapters = new Map([
   ["zen", new ZenBrowserAdapter()],
+  ["chrome", new ChromeBrowserAdapter()],
 ]);
 
 export function supportedBrowsers() {

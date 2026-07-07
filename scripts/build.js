@@ -7,26 +7,83 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const target = process.argv[2] || "firefox";
 
-if (target !== "firefox") {
+const sourceDir = path.join(root, "extensions");
+
+if (target === "firefox") {
+  await buildFirefox();
+} else if (target === "chromium") {
+  await buildChromium();
+} else {
   throw new Error(`Unsupported build target: ${target}`);
 }
 
-const sourceDir = path.join(root, "extensions");
-const buildDir = path.join(root, "build", "firefox-extension");
-const outDir = path.join(root, "dist", "extensions", "firefox");
-const outFile = path.join(outDir, "openbrowser-dev.xpi");
+async function buildFirefox() {
+  const buildDir = path.join(root, "build", "firefox-extension");
+  const outDir = path.join(root, "dist", "extensions", "firefox");
+  const outFile = path.join(outDir, "openbrowser-dev.xpi");
 
-fs.rmSync(buildDir, { recursive: true, force: true });
-fs.mkdirSync(buildDir, { recursive: true });
-fs.mkdirSync(outDir, { recursive: true });
+  fs.rmSync(buildDir, { recursive: true, force: true });
+  fs.mkdirSync(buildDir, { recursive: true });
+  fs.mkdirSync(outDir, { recursive: true });
 
-copyFile(path.join(sourceDir, "manifest.json"), path.join(buildDir, "manifest.json"));
-copyFile(path.join(sourceDir, "background.js"), path.join(buildDir, "background.js"));
-copyFile(path.join(sourceDir, "content.js"), path.join(buildDir, "content.js"));
-copyDirectory(path.join(sourceDir, "assets"), path.join(buildDir, "assets"));
+  copyFile(path.join(sourceDir, "manifest.json"), path.join(buildDir, "manifest.json"));
+  copyExtensionCode(buildDir);
 
-await zipDirectory(buildDir, outFile);
-console.log(`Built ${path.relative(root, outFile)}`);
+  await zipDirectory(buildDir, outFile);
+  console.log(`Built ${path.relative(root, outFile)}`);
+}
+
+async function buildChromium() {
+  const outDir = path.join(root, "dist", "extensions", "chromium");
+  const unpackedDir = path.join(outDir, "unpacked");
+  const outFile = path.join(outDir, "openbrowser.zip");
+
+  fs.rmSync(unpackedDir, { recursive: true, force: true });
+  fs.mkdirSync(unpackedDir, { recursive: true });
+
+  fs.writeFileSync(path.join(unpackedDir, "manifest.json"), `${JSON.stringify(chromiumManifest(), null, 2)}\n`);
+  copyExtensionCode(unpackedDir);
+
+  fs.rmSync(outFile, { force: true });
+  await zipDirectory(unpackedDir, outFile);
+  console.log(`Built ${path.relative(root, unpackedDir)}`);
+  console.log(`Built ${path.relative(root, outFile)}`);
+}
+
+// Transforms the shared MV2 manifest into an MV3 manifest for Chromium. The two
+// extension scripts are feature-detected so the same code runs on both families.
+function chromiumManifest() {
+  const source = JSON.parse(fs.readFileSync(path.join(sourceDir, "manifest.json"), "utf8"));
+  const hostPermissions = (source.permissions || []).filter((permission) => permission.includes("://") || permission === "<all_urls>");
+  const permissions = (source.permissions || []).filter((permission) => !hostPermissions.includes(permission));
+
+  return {
+    manifest_version: 3,
+    name: source.name,
+    version: source.version,
+    description: source.description,
+    key: readChromeKey(),
+    minimum_chrome_version: "109",
+    permissions: [...new Set([...permissions, "scripting"])],
+    host_permissions: hostPermissions,
+    background: {
+      service_worker: "background.js",
+    },
+  };
+}
+
+function readChromeKey() {
+  const constants = fs.readFileSync(path.join(root, "src", "constants.js"), "utf8");
+  const match = constants.match(/CHROME_EXTENSION_KEY\s*=\s*"([^"]+)"/);
+  if (!match) throw new Error("Could not read CHROME_EXTENSION_KEY from src/constants.js.");
+  return match[1];
+}
+
+function copyExtensionCode(destinationDir) {
+  copyFile(path.join(sourceDir, "background.js"), path.join(destinationDir, "background.js"));
+  copyFile(path.join(sourceDir, "content.js"), path.join(destinationDir, "content.js"));
+  copyDirectory(path.join(sourceDir, "assets"), path.join(destinationDir, "assets"));
+}
 
 function copyFile(from, to) {
   fs.mkdirSync(path.dirname(to), { recursive: true });

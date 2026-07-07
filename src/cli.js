@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveBrowser, supportedBrowsers } from "./browsers/registry.js";
 import { BridgeUnavailableError, sendBridgeCommandWithRetry } from "./bridge/client.js";
+import { getConfiguredBrowser, readConfig, setConfiguredBrowser } from "./util/config.js";
 import { screenshotsDir } from "./util/paths.js";
 
 export async function runCli(argv) {
@@ -14,7 +15,11 @@ export async function runCli(argv) {
 
   const parsed = parseGlobalOptions(argv);
   const [command, ...positionals] = parsed.positionals;
-  const adapter = resolveBrowser(parsed.browser);
+
+  if (command === "config") {
+    runConfigCommand(positionals);
+    return;
+  }
 
   if (command === "install") {
     const target = positionals[0];
@@ -25,7 +30,7 @@ export async function runCli(argv) {
       return;
     }
 
-    const browserName = target || parsed.browser;
+    const browserName = target || parsed.browser || getConfiguredBrowser();
     if (!browserName) throw new Error(`Usage: OpenBrowser install <browser>`);
     const installAdapter = resolveBrowser(browserName);
     const result = await installAdapter.install();
@@ -34,11 +39,36 @@ export async function runCli(argv) {
     return;
   }
 
+  const adapter = resolveBrowser(parsed.browser || getConfiguredBrowser());
   const request = toBridgeRequest(command, positionals, parsed.flags);
   if (!request) throw new Error(`Unknown command: ${command}`);
 
   const result = await sendCommandEnsuringBridge(adapter, request.command, request.args, request.timeoutMs);
   await printResult(request, result);
+}
+
+function runConfigCommand(args) {
+  const [key, value] = args;
+
+  if (!key) {
+    console.log(JSON.stringify(readConfig(), null, 2));
+    return;
+  }
+
+  if (key !== "browser") {
+    throw new Error(`Unknown config key: ${key}. Supported keys: browser.`);
+  }
+
+  if (value === undefined) {
+    console.log(JSON.stringify({ browser: getConfiguredBrowser() ?? null }, null, 2));
+    return;
+  }
+
+  const name = value.toLowerCase();
+  resolveBrowser(name); // Validates against supported browsers before persisting.
+  const config = setConfiguredBrowser(name);
+  console.error(`Default browser set to ${name}.`);
+  console.log(JSON.stringify(config, null, 2));
 }
 
 async function sendCommandEnsuringBridge(adapter, command, args, timeoutMs) {
@@ -179,5 +209,5 @@ function normalizeBase64(value) {
 }
 
 function printHelp() {
-  console.log(`OpenBrowser\n\nUsage:\n  OpenBrowser install <browser>\n  OpenBrowser install skills --to <agent-dir-or-skills-dir>\n  OpenBrowser open <url> [--browser zen]\n  OpenBrowser close [--browser zen]\n  OpenBrowser status [--browser zen]\n  OpenBrowser navigate <url> [--browser zen]\n  OpenBrowser reload|back|forward [--browser zen]\n  OpenBrowser state [--browser zen]\n  OpenBrowser screenshot [--base64] [--browser zen]\n  OpenBrowser click <ref> [--browser zen]\n  OpenBrowser keys <text> [--browser zen]\n  OpenBrowser press <key> [--browser zen]\n  OpenBrowser select <ref> <option> [--browser zen]\n  OpenBrowser get --html [--ref <ref>] [--browser zen]\n  OpenBrowser scroll up|down [pixels] [--browser zen]\n  OpenBrowser scroll --to <ref> [--browser zen]\n\nSupported browsers: ${supportedBrowsers().join(", ")}`);
+  console.log(`OpenBrowser\n\nUsage:\n  OpenBrowser install <browser>\n  OpenBrowser install skills --to <agent-dir-or-skills-dir>\n  OpenBrowser config browser <browser>\n  OpenBrowser open <url> [--browser <browser>]\n  OpenBrowser close [--browser <browser>]\n  OpenBrowser status [--browser <browser>]\n  OpenBrowser navigate <url> [--browser <browser>]\n  OpenBrowser reload|back|forward [--browser <browser>]\n  OpenBrowser state [--browser <browser>]\n  OpenBrowser screenshot [--base64] [--browser <browser>]\n  OpenBrowser click <ref> [--browser <browser>]\n  OpenBrowser keys <text> [--browser <browser>]\n  OpenBrowser press <key> [--browser <browser>]\n  OpenBrowser select <ref> <option> [--browser <browser>]\n  OpenBrowser get --html [--ref <ref>] [--browser <browser>]\n  OpenBrowser scroll up|down [pixels] [--browser <browser>]\n  OpenBrowser scroll --to <ref> [--browser <browser>]\n\nSupported browsers: ${supportedBrowsers().join(", ")}\nSet a default browser with: OpenBrowser config browser <browser>`);
 }
