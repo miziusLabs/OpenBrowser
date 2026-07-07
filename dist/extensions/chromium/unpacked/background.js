@@ -1,6 +1,7 @@
 // Firefox exposes the promise-based `browser` namespace; Chromium only exposes
-// `chrome`. Alias it so the same background script runs on both browser families.
-if (typeof browser === "undefined") var browser = chrome;
+// `chrome`. Prefer `browser` and fall back to `chrome` so the same background
+// script runs on both browser families.
+const browser = globalThis.browser || globalThis.chrome;
 
 const NATIVE_HOST = "openbrowser";
 const SESSION_KEY = "session";

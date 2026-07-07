@@ -1,7 +1,9 @@
 (function installOpenBrowserContentScript() {
   // Firefox exposes the promise-based `browser` namespace; Chromium only exposes
-  // `chrome`. Alias it so the same content script runs on both browser families.
-  if (typeof browser === "undefined") var browser = chrome;
+  // `chrome`. Prefer `browser` and fall back to `chrome` so the same content
+  // script runs on both families. Read from globalThis so the hoisted local
+  // declaration does not shadow the real global to `undefined`.
+  var browser = globalThis.browser || globalThis.chrome;
 
   if (window.__openbrowserContentInstalled) return;
   window.__openbrowserContentInstalled = true;
