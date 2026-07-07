@@ -1,10 +1,10 @@
 {
   "name": "@pxlarified/browser",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Minimal local browser-control CLI for OpenBrowser.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mizius-studios/OpenBrowser"
+    "url": "git+https://github.com/miziusLabs/OpenBrowser.git"
   },
   "type": "module",
   "bin": {
