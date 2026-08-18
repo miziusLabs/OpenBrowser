@@ -8,8 +8,8 @@
 
 <p align="center">
   <img alt="Node.js" src="https://img.shields.io/badge/Node.js-%3E%3D20-339933?style=flat-square&logo=node.js&logoColor=white">
-  <img alt="Version" src="https://img.shields.io/badge/version-2.1.1-blue?style=flat-square">
-  <img alt="Browser" src="https://img.shields.io/badge/browser-Zen%20%7C%20Chrome-7F52FF?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-2.2.0-blue?style=flat-square">
+  <img alt="Browser" src="https://img.shields.io/badge/browser-Helium%20%7C%20Chrome%20%7C%20Zen-7F52FF?style=flat-square">
   <img alt="WebExtension" src="https://img.shields.io/badge/WebExtension-Firefox%20%7C%20Chromium-FF7139?style=flat-square&logo=firefoxbrowser&logoColor=white">
 </p>
 
@@ -41,8 +41,9 @@ This project uses the custom GREED-1 license. It grants permission only to fork 
 - Invalidates references after navigation or relevant DOM updates and returns stale-reference errors for old refs.
 - Saves screenshots to `~/OpenBrowser/screenshots/<uuid>.png` or returns Base64 image data.
 - Includes an extensible browser-adapter architecture covering Firefox-family and Chromium-family browsers.
-- Supports Zen (Firefox-based) and Chrome (Chromium-based).
-- Lets you set a default browser with `config browser <browser>` so `--browser` is optional.
+- Supports Helium and Chrome (Chromium-based) plus Zen (Firefox-based).
+- Detects supported browsers and lets you configure a local default so `--browser` is optional.
+- Reports installed, configured, and active browser targets with `browsers`.
 - Includes a minimal extension logo and uses it as the Firefox extension icon.
 - Builds the Firefox extension into a bundled `.xpi` artifact.
 - Includes a release-signing pipeline for Mozilla unlisted signing with `web-ext sign --channel unlisted`.
@@ -51,54 +52,41 @@ This project uses the custom GREED-1 license. It grants permission only to fork 
 
 - Node.js 20 or newer.
 - npm access to install or run `@pxlarified/browser`.
-- A supported browser: Zen (Firefox-based) or Chrome (Chromium-based).
-- For Zen, a Zen profile created on disk. Open Zen once before running the installer.
-- For Chrome, Developer mode enabled so the staged extension can be loaded unpacked.
+- A supported browser: Helium or Chrome (Chromium-based), or Zen (Firefox-based).
+- For Zen, a Zen profile created on disk. Open Zen once before running setup.
+- For Helium and Chrome, Developer mode enabled so the staged extension can be loaded unpacked.
 - For signed Firefox releases, Mozilla Add-ons API credentials.
 
 ## Installation
 
-Install the bundled extension and native bridge for a browser.
+The recommended first-run setup detects the local browser targets and remembers the one you choose.
 
 ```sh
-npx @pxlarified/browser install zen
-npx @pxlarified/browser install chrome
+npx @pxlarified/browser browsers
+npx @pxlarified/browser setup helium
+# or: setup chrome / setup zen
 ```
 
-For Zen (Firefox-family) the installer does the following.
+`setup` installs the native bridge and extension for the selected browser. For Zen it copies the Firefox `.xpi` into detected profiles. For Chromium browsers it stages one shared MV3 extension artifact under `~/OpenBrowser/extensions/<browser>/` and writes the browser-specific native-messaging manifest.
 
-1. Copies the bundled Firefox `.xpi` into detected Zen profiles as `openbrowser@mizius.com.xpi`.
-2. Installs the user-scoped native messaging manifest.
-3. Installs the native host launcher under `~/OpenBrowser/native-host/`.
-4. Replaces an existing staged OpenBrowser extension with the bundled version.
+Chromium browsers cannot side-load a packed extension from a profile. After setup, open the browser's extensions page, enable Developer mode, choose "Load unpacked", and select the path reported by setup. Helium and Chrome use the same extension artifact, but keep separate native-host launchers and bridge sockets.
 
-Restart Zen if the extension update does not load immediately.
+The setup command stores the selected browser in `~/OpenBrowser/config.json`. Each user has their own selection; no browser preference is stored in the repository.
 
-For Chrome (Chromium-family) the installer does the following.
+### Browser selection
 
-1. Installs the native host launcher under `~/OpenBrowser/native-host/`.
-2. Writes the Chromium native messaging manifest (using `allowed_origins`) into Chrome's `NativeMessagingHosts` directory.
-3. Stages the unpacked extension under `~/OpenBrowser/extensions/chrome/`.
-
-Chromium browsers cannot side-load a packed extension from a profile, so load the staged extension manually: open `chrome://extensions`, enable Developer mode, choose "Load unpacked", and select `~/OpenBrowser/extensions/chrome/`. The bundled extension ships a fixed `key`, so it always loads with the same extension id that the native messaging manifest allows.
-
-### Default browser
-
-Set the browser used when `--browser` is omitted.
+Use the friendly `use` command to change the local default:
 
 ```sh
-npx @pxlarified/browser config browser chrome
-npx @pxlarified/browser config browser zen
+npx @pxlarified/browser use helium
+npx @pxlarified/browser use chrome
+npx @pxlarified/browser use zen
+npx @pxlarified/browser use auto
 ```
 
-Show the current configuration.
+`config browser <browser>` remains available as an equivalent configuration command. `auto` selects an active browser first, then a configured/ready browser, then the only detected browser. If the detected browser is not set up, OpenBrowser tells you to run setup. If multiple browsers are possible, OpenBrowser reports the choices instead of silently selecting Zen.
 
-```sh
-npx @pxlarified/browser config browser
-npx @pxlarified/browser config
-```
-
-The default is stored in `~/OpenBrowser/config.json`. Resolution order is `--browser`, then the configured default, then Zen.
+Selection precedence is `--browser`, `OPENBROWSER_BROWSER`, an active session, the configured local browser, then automatic discovery. Use `browsers --json` for machine-readable discovery information.
 
 ### Agent skill installation
 
@@ -114,38 +102,47 @@ If `--to` points at an agent directory such as `.pi/agent`, OpenBrowser writes `
 
 ## Usage
 
-`--browser <browser>` selects the target browser. It is optional and defaults to the browser set with `config browser`, or Zen when none is configured.
+After setup, browser selection is automatic and commands do not need a browser flag.
 
 ```sh
-npx @pxlarified/browser open https://example.com --browser zen
-npx @pxlarified/browser state --browser chrome
-npx @pxlarified/browser click e_1 --browser zen
-npx @pxlarified/browser screenshot --browser chrome
-npx @pxlarified/browser close --browser zen
+npx @pxlarified/browser open https://example.com
+npx @pxlarified/browser state
+npx @pxlarified/browser click e_1
+npx @pxlarified/browser screenshot
+npx @pxlarified/browser close
 ```
 
-### Session lifecycle
+Use `--browser <browser>` when deliberately controlling a specific browser:
 
 ```sh
-npx @pxlarified/browser install zen
-npx @pxlarified/browser open <url> --browser zen
-npx @pxlarified/browser close --browser zen
-npx @pxlarified/browser status --browser zen
+npx @pxlarified/browser state --browser helium
+npx @pxlarified/browser screenshot --browser chrome
+```
+
+### Browser status and session lifecycle
+
+```sh
+npx @pxlarified/browser browsers
+npx @pxlarified/browser browsers --json
+npx @pxlarified/browser setup helium
+npx @pxlarified/browser open <url>
+npx @pxlarified/browser close
+npx @pxlarified/browser status
 ```
 
 ### Navigation
 
 ```sh
-npx @pxlarified/browser navigate <url> --browser zen
-npx @pxlarified/browser reload --browser zen
-npx @pxlarified/browser back --browser zen
-npx @pxlarified/browser forward --browser zen
+npx @pxlarified/browser navigate <url>
+npx @pxlarified/browser reload
+npx @pxlarified/browser back
+npx @pxlarified/browser forward
 ```
 
 ### Page state
 
 ```sh
-npx @pxlarified/browser state --browser zen
+npx @pxlarified/browser state
 ```
 
 `state` returns the current URL, page title, viewport information, and actionable elements.
@@ -157,8 +154,8 @@ npx @pxlarified/browser state --browser zen
 ### Screenshots
 
 ```sh
-npx @pxlarified/browser screenshot --browser zen
-npx @pxlarified/browser screenshot --base64 --browser zen
+npx @pxlarified/browser screenshot
+npx @pxlarified/browser screenshot --base64
 ```
 
 `screenshot` saves a PNG file under the user OpenBrowser directory and prints only the absolute file path to stdout.
@@ -172,25 +169,25 @@ npx @pxlarified/browser screenshot --base64 --browser zen
 ### Interaction
 
 ```sh
-npx @pxlarified/browser click <ref> --browser zen
-npx @pxlarified/browser keys <text> --browser zen
-npx @pxlarified/browser press <key> --browser zen
-npx @pxlarified/browser select <ref> <option> --browser zen
+npx @pxlarified/browser click <ref>
+npx @pxlarified/browser keys <text>
+npx @pxlarified/browser press <key>
+npx @pxlarified/browser select <ref> <option>
 ```
 
 ### Content inspection
 
 ```sh
-npx @pxlarified/browser get --html --browser zen
-npx @pxlarified/browser get --html --ref <ref> --browser zen
+npx @pxlarified/browser get --html
+npx @pxlarified/browser get --html --ref <ref>
 ```
 
 ### Scrolling
 
 ```sh
-npx @pxlarified/browser scroll up [pixels] --browser zen
-npx @pxlarified/browser scroll down [pixels] --browser zen
-npx @pxlarified/browser scroll --to <ref> --browser zen
+npx @pxlarified/browser scroll up [pixels]
+npx @pxlarified/browser scroll down [pixels]
+npx @pxlarified/browser scroll --to <ref>
 ```
 
 ## Session model
@@ -213,14 +210,15 @@ References become invalid after navigation or relevant DOM updates. Commands tha
 
 ## Browser support
 
-OpenBrowser uses browser-specific adapters so additional browsers can be added later.
+OpenBrowser separates browser targets from browser families so browser-specific discovery and installation can reuse the same control implementation.
 
-Currently supported.
+Currently supported browser IDs.
 
-- Zen - Firefox-based browser, installed through a signed `.xpi` artifact.
-- Chrome - Chromium-based browser, loaded unpacked from a `.zip` extension artifact.
+- `zen` - Firefox-based browser, installed through a signed `.xpi` artifact.
+- `chrome` - Chromium-based browser, loaded unpacked from the MV3 artifact.
+- `helium` - Chromium-based browser, loaded unpacked from the same MV3 artifact.
 
-The adapter architecture also covers other Firefox-family browsers through signed `.xpi` artifacts and other Chromium-family browsers through `.zip` extension artifacts.
+Other Firefox-family and Chromium-family browsers can be added by registering their application, profile, launch, and native-messaging paths.
 
 ## Extension artifacts
 
@@ -328,7 +326,7 @@ Install dependencies.
 npm install
 ```
 
-Build the Firefox extension artifact.
+Build both extension artifacts.
 
 ```sh
 npm run build
@@ -345,9 +343,12 @@ Project entry points.
 - Logo source - `assets/logo.svg`
 - CLI - `bin/OpenBrowser.js`
 - CLI implementation - `src/cli.js`
+- Browser catalog - `src/browsers/catalog.js`
 - Browser registry - `src/browsers/registry.js`
+- Browser selection and discovery - `src/browsers/selection.js`
 - Zen adapter - `src/browsers/zen.js`
 - Chrome adapter - `src/browsers/chrome.js`
+- Helium adapter - `src/browsers/helium.js`
 - Firefox-family installer - `src/browsers/firefox-family.js`
 - Chromium-family installer - `src/browsers/chromium-family.js`
 - Default-browser config - `src/util/config.js`

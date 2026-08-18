@@ -62,7 +62,7 @@ function chromiumManifest() {
     name: source.name,
     version: source.version,
     description: source.description,
-    key: readChromeKey(),
+    key: readChromiumKey(),
     minimum_chrome_version: "109",
     permissions: [...new Set([...permissions, "scripting"])],
     host_permissions: hostPermissions,
@@ -72,10 +72,10 @@ function chromiumManifest() {
   };
 }
 
-function readChromeKey() {
+function readChromiumKey() {
   const constants = fs.readFileSync(path.join(root, "src", "constants.js"), "utf8");
-  const match = constants.match(/CHROME_EXTENSION_KEY\s*=\s*"([^"]+)"/);
-  if (!match) throw new Error("Could not read CHROME_EXTENSION_KEY from src/constants.js.");
+  const match = constants.match(/CHROMIUM_EXTENSION_KEY\s*=\s*"([^"]+)"/);
+  if (!match) throw new Error("Could not read CHROMIUM_EXTENSION_KEY from src/constants.js.");
   return match[1];
 }
 

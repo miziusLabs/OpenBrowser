@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { NATIVE_HOST_NAME } from "../constants.js";
 import { openBrowserHome } from "../util/paths.js";
 
 // Installs the shared, browser-agnostic native messaging host launcher used by
@@ -17,15 +18,86 @@ export function installNativeHost(browser) {
   if (process.platform !== "win32") fs.chmodSync(hostScript, 0o755);
 
   if (process.platform === "win32") {
-    const cmd = path.join(dir, `openbrowser-native-host-${browser}.cmd`);
+    const cmd = nativeHostLauncherPath(browser);
     fs.writeFileSync(cmd, `@echo off\r\nset OPENBROWSER_BROWSER=${browser}\r\n"${process.execPath}" "${hostScript}"\r\n`, "utf8");
     return cmd;
   }
 
-  const launcher = path.join(dir, `openbrowser-native-host-${browser}`);
+  const launcher = nativeHostLauncherPath(browser);
   fs.writeFileSync(launcher, `#!/bin/sh\nOPENBROWSER_BROWSER=${shellQuote(browser)} exec ${shellQuote(process.execPath)} ${shellQuote(hostScript)}\n`, "utf8");
   fs.chmodSync(launcher, 0o755);
   return launcher;
+}
+
+export function nativeHostLauncherPath(browser) {
+  const filename = process.platform === "win32"
+    ? `openbrowser-native-host-${browser}.cmd`
+    : `openbrowser-native-host-${browser}`;
+  return path.join(openBrowserHome(), "native-host", filename);
+}
+
+export function nativeMessagingManifestPaths(roots, directory) {
+  const manifestDirectory = directory || (process.platform === "linux" ? "native-messaging-hosts" : "NativeMessagingHosts");
+  return roots.map((root) => path.join(expandHome(root), manifestDirectory, `${NATIVE_HOST_NAME}.json`));
+}
+
+export function existingPaths(candidates) {
+  const seen = new Set();
+  const result = [];
+  for (const candidate of candidates) {
+    const resolved = path.resolve(candidate);
+    if (seen.has(resolved) || !fs.existsSync(resolved)) continue;
+    seen.add(resolved);
+    result.push(resolved);
+  }
+  return result;
+}
+
+export function availableCommands(commands) {
+  const checker = process.platform === "win32" ? "where" : "which";
+  const result = [];
+  for (const command of commands) {
+    try {
+      execFileSync(checker, [command], { stdio: "ignore" });
+      result.push(command);
+    } catch {
+      // The command is not available on PATH.
+    }
+  }
+  return result;
+}
+
+export async function launchBrowser(commands) {
+  for (const command of commands) {
+    const launched = await new Promise((resolve) => {
+      let settled = false;
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        resolve(value);
+      };
+
+      let child;
+      try {
+        child = spawn(command.command, command.args, {
+          detached: true,
+          stdio: "ignore",
+        });
+      } catch {
+        finish(false);
+        return;
+      }
+
+      child.once("error", () => finish(false));
+      child.once("spawn", () => {
+        child.unref();
+        finish(true);
+      });
+    });
+
+    if (launched) return true;
+  }
+  return false;
 }
 
 export function findRunningProcess(processNames) {
