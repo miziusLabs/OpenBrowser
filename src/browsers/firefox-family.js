@@ -2,17 +2,31 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawn } from "node:child_process";
 import { EXTENSION_ID, FIREFOX_DEV_ARTIFACT, FIREFOX_SIGNED_ARTIFACT, NATIVE_HOST_NAME } from "../constants.js";
-import { openBrowserHome, packageRoot } from "../util/paths.js";
-import { expandHome, findRunningProcess, installNativeHost, uniqueExistingDirectories } from "./shared.js";
+import { bridgeSocketPath, openBrowserHome, packageRoot } from "../util/paths.js";
+import {
+  availableCommands,
+  existingPaths,
+  expandHome,
+  findRunningProcess,
+  installNativeHost,
+  launchBrowser,
+  nativeHostLauncherPath,
+  nativeMessagingManifestPaths,
+  uniqueExistingDirectories,
+} from "./shared.js";
 
 export class FirefoxFamilyAdapter {
   constructor(options) {
     this.name = options.name;
     this.displayName = options.displayName;
-    this.profileRoots = options.profileRoots;
-    this.launchCommands = options.launchCommands;
-    this.nativeManifestRoots = options.nativeManifestRoots;
+    this.family = options.family || "firefox";
+    this.aliases = options.aliases || [];
+    this.profileRoots = options.profileRoots || [];
+    this.launchCommands = options.launchCommands || [];
+    this.nativeManifestRoots = options.nativeManifestRoots || [];
     this.processNames = options.processNames || [];
+    this.applicationPaths = options.applicationPaths || [];
+    this.executableCandidates = options.executableCandidates || [];
   }
 
   artifactPath() {
@@ -20,6 +34,44 @@ export class FirefoxFamilyAdapter {
     const signed = path.join(root, FIREFOX_SIGNED_ARTIFACT);
     if (fs.existsSync(signed)) return signed;
     return path.join(root, FIREFOX_DEV_ARTIFACT);
+  }
+
+  detect() {
+    let profiles = [];
+    try {
+      profiles = this.findProfiles();
+    } catch {
+      // A malformed profile configuration should not prevent other browsers
+      // from being discovered.
+    }
+
+    const extensions = existingPaths(profiles.map((profile) => path.join(profile, "extensions", `${EXTENSION_ID}.xpi`)));
+    const nativeManifests = existingPaths(this.nativeManifestCandidates());
+    const applications = existingPaths(this.applicationPaths);
+    const executables = availableCommands(this.executableCandidates);
+    const nativeHost = fs.existsSync(nativeHostLauncherPath(this.name));
+    const bridgeSocket = fs.existsSync(bridgeSocketPath(this.name));
+    const installed = profiles.length > 0 || applications.length > 0 || executables.length > 0;
+    const configured = nativeManifests.length > 0 && extensions.length > 0 && nativeHost;
+
+    return {
+      browser: this.name,
+      displayName: this.displayName,
+      family: this.family,
+      aliases: this.aliases,
+      installed,
+      configured,
+      detected: installed || configured || nativeHost || bridgeSocket,
+      ready: false,
+      sessionOpen: false,
+      profiles,
+      applications,
+      executables,
+      extensions,
+      nativeManifests,
+      nativeHost,
+      bridgeSocket,
+    };
   }
 
   async install() {
@@ -62,19 +114,7 @@ export class FirefoxFamilyAdapter {
   }
 
   async launch() {
-    for (const command of this.launchCommands) {
-      try {
-        const child = spawn(command.command, command.args, {
-          detached: true,
-          stdio: "ignore",
-        });
-        child.unref();
-        return true;
-      } catch {
-        // Try the next known command.
-      }
-    }
-    return false;
+    return launchBrowser(this.launchCommands);
   }
 
   findProfiles() {
@@ -88,6 +128,14 @@ export class FirefoxFamilyAdapter {
     }
 
     return uniqueExistingDirectories(profiles);
+  }
+
+  nativeManifestCandidates() {
+    const candidates = nativeMessagingManifestPaths(this.nativeManifestRoots);
+    if (process.platform === "win32") {
+      candidates.push(path.join(openBrowserHome(), "native-messaging-hosts", `${NATIVE_HOST_NAME}.json`));
+    }
+    return candidates;
   }
 }
 

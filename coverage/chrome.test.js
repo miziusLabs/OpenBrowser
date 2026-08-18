@@ -6,7 +6,8 @@ import os from "node:os";
 import path from "node:path";
 import { ChromeBrowserAdapter } from "../src/browsers/chrome.js";
 import { ChromiumFamilyAdapter } from "../src/browsers/chromium-family.js";
-import { CHROME_EXTENSION_ID, CHROME_EXTENSION_KEY, NATIVE_HOST_NAME } from "../src/constants.js";
+import { HeliumBrowserAdapter } from "../src/browsers/helium.js";
+import { CHROMIUM_EXTENSION_ID, CHROMIUM_EXTENSION_KEY, NATIVE_HOST_NAME } from "../src/constants.js";
 
 const originalHome = process.env.OPENBROWSER_HOME;
 
@@ -21,11 +22,18 @@ test("ChromeBrowserAdapter identifies as chrome", () => {
   assert.equal(adapter.displayName, "Chrome");
 });
 
-test("CHROME_EXTENSION_ID is derived from CHROME_EXTENSION_KEY", () => {
-  const der = Buffer.from(CHROME_EXTENSION_KEY, "base64");
+test("HeliumBrowserAdapter reuses the Chromium family", () => {
+  const adapter = new HeliumBrowserAdapter();
+  assert.equal(adapter.name, "helium");
+  assert.equal(adapter.displayName, "Helium");
+  assert.equal(adapter.family, "chromium");
+});
+
+test("CHROMIUM_EXTENSION_ID is derived from CHROMIUM_EXTENSION_KEY", () => {
+  const der = Buffer.from(CHROMIUM_EXTENSION_KEY, "base64");
   const hex = crypto.createHash("sha256").update(der).digest().subarray(0, 16).toString("hex");
   const id = [...hex].map((nibble) => String.fromCharCode(97 + parseInt(nibble, 16))).join("");
-  assert.equal(id, CHROME_EXTENSION_ID);
+  assert.equal(id, CHROMIUM_EXTENSION_ID);
 });
 
 test("install stages the extension and writes a Chromium native-messaging manifest", { skip: process.platform === "win32" }, async () => {
@@ -51,6 +59,9 @@ test("install stages the extension and writes a Chromium native-messaging manife
     assert.equal(result.unpackedExtension, path.join(home, "extensions", "chrome"));
     assert.ok(fs.existsSync(path.join(result.unpackedExtension, "manifest.json")));
     assert.ok(fs.existsSync(path.join(result.unpackedExtension, "background.js")));
+    assert.ok(fs.existsSync(path.join(result.unpackedExtension, "assets", "logo-128.png")));
+    const extensionManifest = JSON.parse(fs.readFileSync(path.join(result.unpackedExtension, "manifest.json"), "utf8"));
+    assert.equal(extensionManifest.icons["128"], "assets/logo-128.png");
 
     // Native-messaging manifest uses the Chromium allowed_origins format.
     const manifestPath = path.join(manifestRoot, "NativeMessagingHosts", `${NATIVE_HOST_NAME}.json`);
@@ -59,7 +70,7 @@ test("install stages the extension and writes a Chromium native-messaging manife
     assert.equal(manifest.name, NATIVE_HOST_NAME);
     assert.equal(manifest.type, "stdio");
     assert.equal(manifest.path, result.nativeHost);
-    assert.deepEqual(manifest.allowed_origins, [`chrome-extension://${CHROME_EXTENSION_ID}/`]);
+    assert.deepEqual(manifest.allowed_origins, [`chrome-extension://${CHROMIUM_EXTENSION_ID}/`]);
   } finally {
     fs.rmSync(home, { recursive: true, force: true });
     fs.rmSync(manifestRoot, { recursive: true, force: true });

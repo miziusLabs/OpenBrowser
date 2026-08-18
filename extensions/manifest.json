@@ -1,12 +1,14 @@
 {
   "manifest_version": 2,
   "name": "OpenBrowser",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "Local user-scoped browser control bridge for the OpenBrowser CLI.",
   "icons": {
-    "48": "assets/logo.svg",
-    "96": "assets/logo.svg",
-    "128": "assets/logo.svg"
+    "16": "assets/logo-16.png",
+    "32": "assets/logo-32.png",
+    "48": "assets/logo-48.png",
+    "96": "assets/logo-96.png",
+    "128": "assets/logo-128.png"
   },
   "permissions": [
     "nativeMessaging",

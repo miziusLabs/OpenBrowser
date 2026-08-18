@@ -10,50 +10,64 @@ Run commands through the npm package.
 npx @pxlarified/browser <command>
 ```
 
-Close the session after you are done (unless it contains important information or you want to keep it warm for another session).
-
-### Usage 
-`--browser <browser>` selects the browser (`zen` or `chrome`). It is optional and
-defaults to the browser set with `config browser`, or Zen when none is configured.
+OpenBrowser selects a local browser automatically. The first time, inspect or set up
+one browser on the current machine:
 
 ```bash
-# Installation
-npx @pxlarified/browser install zen
-npx @pxlarified/browser install chrome
+npx @pxlarified/browser browsers
+npx @pxlarified/browser setup helium
+# or: chrome / zen
+```
 
-# Default browser (used when --browser is omitted)
-npx @pxlarified/browser config browser chrome
+`setup` installs the bridge, stages the extension, and remembers that browser as the
+local default. Chromium browsers may require one manual "Load unpacked" step, which
+setup reports. Do not hard-code a browser in normal commands. Use `--browser` only
+when deliberately working with multiple browsers.
+
+```bash
+# Show or change the local default
+npx @pxlarified/browser config browser
+npx @pxlarified/browser use helium
+npx @pxlarified/browser use auto
 
 # Session management
-npx @pxlarified/browser open <url> --browser zen
-npx @pxlarified/browser close --browser zen
-npx @pxlarified/browser status --browser zen
+npx @pxlarified/browser open https://example.com
+npx @pxlarified/browser close
+npx @pxlarified/browser status
 
 # Navigation
-npx @pxlarified/browser navigate <url> --browser zen
-npx @pxlarified/browser reload --browser zen
-npx @pxlarified/browser back --browser zen
-npx @pxlarified/browser forward --browser zen
+npx @pxlarified/browser navigate https://example.com
+npx @pxlarified/browser reload
+npx @pxlarified/browser back
+npx @pxlarified/browser forward
 
 # Page state
-npx @pxlarified/browser state --browser zen
+npx @pxlarified/browser state
 
 # Screenshots
-npx @pxlarified/browser screenshot --browser zen
-npx @pxlarified/browser screenshot --base64 --browser zen
+npx @pxlarified/browser screenshot
+npx @pxlarified/browser screenshot --base64
 
 # Interaction
-npx @pxlarified/browser click <ref> --browser zen
-npx @pxlarified/browser keys <text> --browser zen
-npx @pxlarified/browser press <key> --browser zen
-npx @pxlarified/browser select <ref> <option> --browser zen
+npx @pxlarified/browser click e_1
+npx @pxlarified/browser keys "text to type"
+npx @pxlarified/browser press Enter
+npx @pxlarified/browser select e_1 option-value
 
 # Content inspection
-npx @pxlarified/browser get --html --browser zen
-npx @pxlarified/browser get --html --ref <ref> --browser zen
+npx @pxlarified/browser get --html
+npx @pxlarified/browser get --html --ref e_1
 
 # Scrolling
-npx @pxlarified/browser scroll up [pixels] --browser zen
-npx @pxlarified/browser scroll down [pixels] --browser zen
-npx @pxlarified/browser scroll --to <ref> --browser zen
+npx @pxlarified/browser scroll up [pixels]
+npx @pxlarified/browser scroll down [pixels]
+npx @pxlarified/browser scroll --to e_1
 ```
+
+Supported browser IDs are `helium`, `chrome`, and `zen`. Every command also accepts
+`--browser <id>` as an explicit override. If more than one browser is active or
+configured and no default is selected, OpenBrowser reports the choices instead of
+silently choosing the wrong browser.
+
+Close the session after you are done unless it contains important information or you
+want to keep it warm.

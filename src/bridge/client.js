@@ -4,7 +4,7 @@ import { bridgeSocketPath } from "../util/paths.js";
 export class BridgeUnavailableError extends Error {
   constructor(browser, cause) {
     super(
-      `OpenBrowser bridge for ${browser} is not available. Start ${browser}, make sure the OpenBrowser extension is installed, then retry.`,
+      `OpenBrowser bridge for ${browser} is not available. Run OpenBrowser setup ${browser}, load the extension if prompted, then retry.`,
     );
     this.name = "BridgeUnavailableError";
     this.cause = cause;

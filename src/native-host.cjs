@@ -5,7 +5,11 @@ const net = require("node:net");
 const os = require("node:os");
 const path = require("node:path");
 
-const browser = process.env.OPENBROWSER_BROWSER || "zen";
+const browser = process.env.OPENBROWSER_BROWSER;
+if (!browser) {
+  process.stderr.write("OpenBrowser native host was started without a browser target.\n");
+  process.exit(1);
+}
 const appHome = process.env.OPENBROWSER_HOME || path.join(os.homedir(), "OpenBrowser");
 const socketPath = process.platform === "win32"
   ? `\\\\.\\pipe\\openbrowser-${browser}`
