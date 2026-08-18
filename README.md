@@ -44,7 +44,7 @@ This project uses the custom GREED-1 license. It grants permission only to fork 
 - Supports Helium and Chrome (Chromium-based) plus Zen (Firefox-based).
 - Detects supported browsers and lets you configure a local default so `--browser` is optional.
 - Reports installed, configured, and active browser targets with `browsers`.
-- Includes a minimal extension logo and uses it as the Firefox extension icon.
+- Includes PNG extension icons for Firefox and Chromium-family browsers.
 - Builds the Firefox extension into a bundled `.xpi` artifact.
 - Includes a release-signing pipeline for Mozilla unlisted signing with `web-ext sign --channel unlisted`.
 
@@ -84,9 +84,9 @@ npx @pxlarified/browser use zen
 npx @pxlarified/browser use auto
 ```
 
-`config browser <browser>` remains available as an equivalent configuration command. `auto` selects an active browser first, then a configured/ready browser, then the only detected browser. If the detected browser is not set up, OpenBrowser tells you to run setup. If multiple browsers are possible, OpenBrowser reports the choices instead of silently selecting Zen.
+`config browser <browser>` remains available as an equivalent configuration command. `auto` uses a configured, ready browser first, then an active browser, then the only detected browser. If the detected browser is not set up, OpenBrowser tells you to run setup. If multiple browsers are possible, OpenBrowser reports the choices instead of silently selecting Zen.
 
-Selection precedence is `--browser`, `OPENBROWSER_BROWSER`, an active session, the configured local browser, then automatic discovery. Use `browsers --json` for machine-readable discovery information.
+Selection precedence is `--browser`, `OPENBROWSER_BROWSER`, the configured local browser when setup is complete, an active session, then automatic discovery. Configured daily commands avoid probing unrelated browser bridges. Use `browsers --json` for machine-readable discovery information.
 
 ### Agent skill installation
 

@@ -52,7 +52,7 @@ export class FirefoxFamilyAdapter {
     const nativeHost = fs.existsSync(nativeHostLauncherPath(this.name));
     const bridgeSocket = fs.existsSync(bridgeSocketPath(this.name));
     const installed = profiles.length > 0 || applications.length > 0 || executables.length > 0;
-    const configured = nativeManifests.length > 0 || extensions.length > 0;
+    const configured = nativeManifests.length > 0 && extensions.length > 0 && nativeHost;
 
     return {
       browser: this.name,

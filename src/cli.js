@@ -29,6 +29,7 @@ export async function runCli(argv) {
   }
 
   if (command === "browsers") {
+    if (positionals.length > 0) throw new Error("Usage: OpenBrowser browsers [--json]");
     await runBrowsersCommand(parsed.flags);
     return;
   }

@@ -38,7 +38,7 @@ test("an unconfigured local default produces a setup instruction", async () => {
   );
 });
 
-test("an active session takes precedence over the configured browser", async () => {
+test("an active session is used when the configured browser is not set up", async () => {
   const home = useTempHome();
   setConfiguredBrowser("helium");
   const socketPath = path.join(home, "bridge", "chrome.sock");

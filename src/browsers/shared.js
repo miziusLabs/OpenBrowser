@@ -41,6 +41,13 @@ export function nativeMessagingManifestPaths(roots, directory) {
   return roots.map((root) => path.join(expandHome(root), manifestDirectory, `${NATIVE_HOST_NAME}.json`));
 }
 
+export function nativeMessagingManifestPath(browser, platform = process.platform) {
+  const filename = platform === "win32"
+    ? `${NATIVE_HOST_NAME}-${browser}.json`
+    : `${NATIVE_HOST_NAME}.json`;
+  return path.join(openBrowserHome(), "native-messaging-hosts", filename);
+}
+
 export function existingPaths(candidates) {
   const seen = new Set();
   const result = [];
@@ -90,9 +97,13 @@ export async function launchBrowser(commands) {
 
       child.once("error", () => finish(false));
       child.once("spawn", () => {
+        if (command.waitForExit) return;
         child.unref();
         finish(true);
       });
+      if (command.waitForExit) {
+        child.once("close", (code) => finish(code === 0));
+      }
     });
 
     if (launched) return true;

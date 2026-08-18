@@ -59,6 +59,9 @@ test("install stages the extension and writes a Chromium native-messaging manife
     assert.equal(result.unpackedExtension, path.join(home, "extensions", "chrome"));
     assert.ok(fs.existsSync(path.join(result.unpackedExtension, "manifest.json")));
     assert.ok(fs.existsSync(path.join(result.unpackedExtension, "background.js")));
+    assert.ok(fs.existsSync(path.join(result.unpackedExtension, "assets", "logo-128.png")));
+    const extensionManifest = JSON.parse(fs.readFileSync(path.join(result.unpackedExtension, "manifest.json"), "utf8"));
+    assert.equal(extensionManifest.icons["128"], "assets/logo-128.png");
 
     // Native-messaging manifest uses the Chromium allowed_origins format.
     const manifestPath = path.join(manifestRoot, "NativeMessagingHosts", `${NATIVE_HOST_NAME}.json`);

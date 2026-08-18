@@ -24,7 +24,11 @@ export async function selectBrowser(requested, options = {}) {
   const configuredBrowser = getConfiguredBrowser();
   if (configuredBrowser) {
     const normalized = normalizeBrowserName(configuredBrowser);
-    if (normalized !== DEFAULT_BROWSER) return selectAutomatically(resolveBrowser(configuredBrowser), allowUnconfigured);
+    if (normalized !== DEFAULT_BROWSER) {
+      const configuredAdapter = resolveBrowser(configuredBrowser);
+      if (configuredAdapter.detect().configured) return configuredAdapter;
+      return selectAutomatically(configuredAdapter, allowUnconfigured);
+    }
   }
 
   return selectAutomatically(undefined, allowUnconfigured);

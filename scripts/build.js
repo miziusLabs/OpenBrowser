@@ -62,6 +62,7 @@ function chromiumManifest() {
     name: source.name,
     version: source.version,
     description: source.description,
+    icons: source.icons,
     key: readChromiumKey(),
     minimum_chrome_version: "109",
     permissions: [...new Set([...permissions, "scripting"])],

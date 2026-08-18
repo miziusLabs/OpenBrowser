@@ -10,6 +10,7 @@ import {
   installNativeHost,
   launchBrowser,
   nativeHostLauncherPath,
+  nativeMessagingManifestPath,
   nativeMessagingManifestPaths,
   uniqueExistingDirectories,
 } from "./shared.js";
@@ -71,7 +72,7 @@ export class ChromiumFamilyAdapter {
     }
 
     const nativeHost = installNativeHost(this.name);
-    const manifests = installNativeMessagingManifests(this.nativeManifestRoots, this.registryRoots, nativeHost);
+    const manifests = installNativeMessagingManifests(this.name, this.nativeManifestRoots, this.registryRoots, nativeHost);
 
     // Chromium browsers cannot side-load a packed extension from the profile the
     // way Firefox does, so stage the unpacked extension and let the user load it.
@@ -97,13 +98,13 @@ export class ChromiumFamilyAdapter {
   nativeManifestCandidates() {
     const candidates = nativeMessagingManifestPaths(this.nativeManifestRoots, "NativeMessagingHosts");
     if (process.platform === "win32") {
-      candidates.push(path.join(openBrowserHome(), "native-messaging-hosts", `${NATIVE_HOST_NAME}.json`));
+      candidates.push(nativeMessagingManifestPath(this.name));
     }
     return candidates;
   }
 }
 
-function installNativeMessagingManifests(roots, registryRoots, hostPath) {
+function installNativeMessagingManifests(browser, roots, registryRoots, hostPath) {
   const manifest = {
     name: NATIVE_HOST_NAME,
     description: "OpenBrowser local user-scoped native bridge",
@@ -128,7 +129,7 @@ function installNativeMessagingManifests(roots, registryRoots, hostPath) {
   if (process.platform === "win32") {
     const manifestDir = path.join(openBrowserHome(), "native-messaging-hosts");
     fs.mkdirSync(manifestDir, { recursive: true });
-    const manifestPath = path.join(manifestDir, `${NATIVE_HOST_NAME}.json`);
+    const manifestPath = nativeMessagingManifestPath(browser);
     fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
     written.push(manifestPath);
 

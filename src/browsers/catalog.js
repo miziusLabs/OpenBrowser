@@ -50,8 +50,8 @@ function zenDefinition() {
       executableCandidates: ["zen", "zen-browser"],
       processNames: ["Zen Browser", "Zen", "zen"],
       launchCommands: [
-        { command: "open", args: ["-a", "Zen Browser"] },
-        { command: "open", args: ["-a", "Zen"] },
+        { command: "open", args: ["-a", "Zen Browser"], waitForExit: true },
+        { command: "open", args: ["-a", "Zen"], waitForExit: true },
       ],
     };
   }
@@ -109,7 +109,7 @@ function chromeDefinition() {
       nativeManifestRoots: [profileRoot],
       applicationPaths: macApplicationPaths(["Google Chrome"]),
       executableCandidates: ["google-chrome", "google-chrome-stable"],
-      launchCommands: [{ command: "open", args: ["-a", "Google Chrome"] }],
+      launchCommands: [{ command: "open", args: ["-a", "Google Chrome"], waitForExit: true }],
     };
   }
 
@@ -122,6 +122,7 @@ function chromeDefinition() {
       family: "chromium",
       profileRoots: [path.join(localAppData, "Google", "Chrome", "User Data")],
       nativeManifestRoots: [],
+      registryRoots: ["HKCU\\Software\\Google\\Chrome\\NativeMessagingHosts"],
       applicationPaths: windowsApplicationPaths("Google", "Chrome", "Application", "chrome.exe"),
       executableCandidates: ["chrome.exe", "google-chrome.exe"],
       launchCommands: [{ command: "cmd", args: ["/c", "start", "", "chrome"] }],
@@ -165,8 +166,8 @@ function heliumDefinition() {
       applicationPaths: macApplicationPaths(["Helium", "Helium Browser"]),
       executableCandidates: ["helium", "helium-browser"],
       launchCommands: [
-        { command: "open", args: ["-a", "Helium"] },
-        { command: "open", args: ["-a", "Helium Browser"] },
+        { command: "open", args: ["-a", "Helium"], waitForExit: true },
+        { command: "open", args: ["-a", "Helium Browser"], waitForExit: true },
       ],
     };
   }
@@ -184,6 +185,7 @@ function heliumDefinition() {
         path.join(appData, "Helium"),
       ],
       nativeManifestRoots: [],
+      registryRoots: ["HKCU\\Software\\Helium\\NativeMessagingHosts"],
       applicationPaths: [
         ...windowsApplicationPaths("Helium", "helium.exe"),
         ...windowsApplicationPaths("Helium Browser", "helium.exe"),
