@@ -10,19 +10,7 @@ Run commands through the npm package.
 npx @pxlarified/browser <command>
 ```
 
-OpenBrowser selects a local browser automatically. The first time, inspect or set up
-one browser on the current machine:
-
-```bash
-npx @pxlarified/browser browsers
-npx @pxlarified/browser setup helium
-# or: chrome / zen
-```
-
-`setup` installs the bridge, stages the extension, and remembers that browser as the
-local default. Chromium browsers may require one manual "Load unpacked" step, which
-setup reports. Do not hard-code a browser in normal commands. Use `--browser` only
-when deliberately working with multiple browsers.
+OpenBrowser selects a local default browser automatically.
 
 ```bash
 # Show or change the local default
