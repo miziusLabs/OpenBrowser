@@ -7,6 +7,7 @@ import path from "node:path";
 import { ChromeBrowserAdapter } from "../src/browsers/chrome.js";
 import { ChromiumFamilyAdapter } from "../src/browsers/chromium-family.js";
 import { HeliumBrowserAdapter } from "../src/browsers/helium.js";
+import { browserDefinitions } from "../src/browsers/catalog.js";
 import { CHROMIUM_EXTENSION_ID, CHROMIUM_EXTENSION_KEY, NATIVE_HOST_NAME } from "../src/constants.js";
 
 const originalHome = process.env.OPENBROWSER_HOME;
@@ -27,6 +28,18 @@ test("HeliumBrowserAdapter reuses the Chromium family", () => {
   assert.equal(adapter.name, "helium");
   assert.equal(adapter.displayName, "Helium");
   assert.equal(adapter.family, "chromium");
+});
+
+test("Helium uses the standard Windows installer layout", () => {
+  const localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), "AppData", "Local");
+  const helium = browserDefinitions("win32").find((definition) => definition.name === "helium");
+  const applicationPath = path.join(localAppData, "imput", "Helium", "Application", "chrome.exe");
+  const profilePath = path.join(localAppData, "imput", "Helium", "User Data");
+
+  assert.ok(helium.profileRoots.includes(profilePath));
+  assert.ok(helium.applicationPaths.includes(applicationPath));
+  assert.ok(helium.launchCommands.some(({ command }) => command === applicationPath));
+  assert.deepEqual(helium.registryRoots, ["HKCU\\Software\\Chromium\\NativeMessagingHosts"]);
 });
 
 test("CHROMIUM_EXTENSION_ID is derived from CHROMIUM_EXTENSION_KEY", () => {

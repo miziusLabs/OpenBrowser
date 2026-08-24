@@ -28,8 +28,8 @@ function windowsApplicationPaths(...segments) {
   ];
 }
 
-function zenDefinition() {
-  if (process.platform === "darwin") {
+function zenDefinition(platform = process.platform) {
+  if (platform === "darwin") {
     return {
       name: "zen",
       aliases: ["zen-browser", "zen browser"],
@@ -56,7 +56,7 @@ function zenDefinition() {
     };
   }
 
-  if (process.platform === "win32") {
+  if (platform === "win32") {
     const appData = envPath("APPDATA", path.join(os.homedir(), "AppData", "Roaming"));
 
     return {
@@ -97,8 +97,8 @@ function zenDefinition() {
   };
 }
 
-function chromeDefinition() {
-  if (process.platform === "darwin") {
+function chromeDefinition(platform = process.platform) {
+  if (platform === "darwin") {
     const profileRoot = homePath("Library", "Application Support", "Google", "Chrome");
     return {
       name: "chrome",
@@ -113,7 +113,7 @@ function chromeDefinition() {
     };
   }
 
-  if (process.platform === "win32") {
+  if (platform === "win32") {
     const localAppData = envPath("LOCALAPPDATA", path.join(os.homedir(), "AppData", "Local"));
     return {
       name: "chrome",
@@ -145,8 +145,8 @@ function chromeDefinition() {
   };
 }
 
-function heliumDefinition() {
-  if (process.platform === "darwin") {
+function heliumDefinition(platform = process.platform) {
+  if (platform === "darwin") {
     const profileRoot = homePath("Library", "Application Support", "net.imput.helium");
     return {
       name: "helium",
@@ -172,26 +172,31 @@ function heliumDefinition() {
     };
   }
 
-  if (process.platform === "win32") {
+  if (platform === "win32") {
     const appData = envPath("APPDATA", path.join(os.homedir(), "AppData", "Roaming"));
     const localAppData = envPath("LOCALAPPDATA", path.join(os.homedir(), "AppData", "Local"));
+    const applicationPaths = [
+      ...windowsApplicationPaths("imput", "Helium", "Application", "chrome.exe"),
+      ...windowsApplicationPaths("Helium", "helium.exe"),
+      ...windowsApplicationPaths("Helium Browser", "helium.exe"),
+    ];
+
     return {
       name: "helium",
       aliases: ["helium-browser", "helium browser"],
       displayName: "Helium",
       family: "chromium",
       profileRoots: [
+        path.join(localAppData, "imput", "Helium", "User Data"),
         path.join(localAppData, "Helium", "User Data"),
         path.join(appData, "Helium"),
       ],
       nativeManifestRoots: [],
-      registryRoots: ["HKCU\\Software\\Helium\\NativeMessagingHosts"],
-      applicationPaths: [
-        ...windowsApplicationPaths("Helium", "helium.exe"),
-        ...windowsApplicationPaths("Helium Browser", "helium.exe"),
-      ],
+      registryRoots: ["HKCU\\Software\\Chromium\\NativeMessagingHosts"],
+      applicationPaths,
       executableCandidates: ["helium.exe", "helium-browser.exe"],
       launchCommands: [
+        ...applicationPaths.map((command) => ({ command, args: [] })),
         { command: "cmd", args: ["/c", "start", "", "helium"] },
         { command: "cmd", args: ["/c", "start", "", "helium-browser"] },
       ],
@@ -214,13 +219,13 @@ function heliumDefinition() {
   };
 }
 
-export function browserDefinitions() {
-  return [zenDefinition(), chromeDefinition(), heliumDefinition()];
+export function browserDefinitions(platform = process.platform) {
+  return [zenDefinition(platform), chromeDefinition(platform), heliumDefinition(platform)];
 }
 
-export function getBrowserDefinition(name) {
+export function getBrowserDefinition(name, platform = process.platform) {
   const normalized = String(name || "").trim().toLowerCase();
-  return browserDefinitions().find((definition) => (
+  return browserDefinitions(platform).find((definition) => (
     definition.name === normalized || definition.aliases.includes(normalized)
   ));
 }
